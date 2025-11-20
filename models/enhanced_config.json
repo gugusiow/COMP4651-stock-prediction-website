@@ -1,0 +1,9 @@
+{
+  "features_used": 255,
+  "sequence_length": 15,
+  "prediction_horizon": 5,
+  "target_threshold": 0.02,
+  "training_samples": 5196,
+  "test_accuracy": 0.7298076923076923,
+  "model_type": "RandomForest"
+}

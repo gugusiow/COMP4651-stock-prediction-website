@@ -1,0 +1,14 @@
+{
+  "features": [
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "Volume"
+  ],
+  "sequence_length": 60,
+  "classification_threshold": 0.001,
+  "training_samples": 4410,
+  "input_dimension": 300,
+  "test_accuracy": 0.5090702947845805
+}

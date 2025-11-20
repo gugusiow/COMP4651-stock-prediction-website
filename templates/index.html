@@ -20,11 +20,40 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Model Selection -->
+            <section class="model-section">
+                <div class="card">
+                    <h2><i class="fas fa-cogs"></i> Select Prediction Model</h2>
+                    <div class="model-selection">
+                        <div class="model-options">
+                            <label class="model-option">
+                                <input type="radio" name="model" value="enhanced" checked>
+                                <div class="model-card">
+                                    <i class="fas fa-rocket"></i>
+                                    <h3>Enhanced Model</h3>
+                                    <p>Uses technical indicators (RSI, MACD, Bollinger Bands) for more accurate predictions</p>
+                                    <div class="model-badge">Recommended</div>
+                                </div>
+                            </label>
+                            <label class="model-option">
+                                <input type="radio" name="model" value="simple">
+                                <div class="model-card">
+                                    <i class="fas fa-bolt"></i>
+                                    <h3>Simple Model</h3>
+                                    <p>Basic price and volume analysis for quick predictions</p>
+                                    <div class="model-badge">Fast</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Input Section -->
             <section class="input-section">
                 <div class="card">
-                    <h2><i class="fas fa-search"></i> Predict Stocks</h2>
-                    <p class="card-description">Enter one or more stock tickers (comma-separated) to get AI-powered price predictions for tomorrow!</p>
+                    <h2><i class="fas fa-search"></i> Analyze Stocks</h2>
+                    <p class="card-description">Enter one or more stock tickers (comma-separated) to get AI-powered price predictions</p>
                     
                     <form id="prediction-form" class="prediction-form">
                         <div class="input-group">
@@ -36,14 +65,16 @@
                                 placeholder="e.g., AAPL, MSFT, GOOGL" 
                                 required
                             >
-                            <small>Separate multiple tickers with commas</small>
+                            <small>Separate multiple tickers with commas (max 8)</small>
                         </div>
                         
-                        <button type="submit" class="predict-btn" id="predict-btn">
-                            <i class="fas fa-bolt"></i>
-                            <span id="btn-text">Get Predictions</span>
-                            <div class="spinner hidden" id="spinner"></div>
-                        </button>
+                        <div class="form-footer">
+                            <button type="submit" class="predict-btn" id="predict-btn">
+                                <i class="fas fa-bolt"></i>
+                                <span id="btn-text">Get Predictions</span>
+                                <div class="spinner hidden" id="spinner"></div>
+                            </button>
+                        </div>
                     </form>
                 </div>
             </section>
@@ -51,33 +82,18 @@
             <!-- Results Section -->
             <section class="results-section hidden" id="results-section">
                 <div class="card">
-                    <h2><i class="fas fa-chart-bar"></i> Prediction Results</h2>
+                    <div class="results-header">
+                        <h2><i class="fas fa-chart-bar"></i> Prediction Results</h2>
+                        <div class="model-indicator" id="model-indicator">
+                            <i class="fas fa-robot"></i>
+                            <span id="model-used">Enhanced Model</span>
+                        </div>
+                    </div>
                     <div class="results-container" id="results-container">
-                        <!-- Results will be populated here by JavaScript -->
+                        <!-- Results will be appear here by JavaScript -->
                     </div>
                 </div>
             </section>
-
-            <!-- Features Section -->
-            <!-- <section class="features-section">
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <i class="fas fa-brain"></i>
-                        <h3>AI-Powered</h3>
-                        <p>Advanced machine learning models analyze historical data and market patterns</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-bolt"></i>
-                        <h3>Real-Time Data</h3>
-                        <p>Latest market data integrated for accurate, up-to-date predictions</p>
-                    </div>
-                    <div class="feature-card">
-                        <i class="fas fa-user-graduate"></i>
-                        <h3>Beginner Friendly</h3>
-                        <p>Simple interface designed for investors of all experience levels</p>
-                    </div>
-                </div>
-            </section> -->
         </main>
 
         <!-- Footer -->
@@ -88,10 +104,28 @@
     </div>
 
     <script>
+        // Model selection
+        const modelRadios = document.querySelectorAll('input[name="model"]');
+        const currentModelDisplay = document.getElementById('current-model');
+        const modelIndicator = document.getElementById('model-indicator');
+        const modelUsedDisplay = document.getElementById('model-used');
+
+        modelRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const selectedModel = this.value;
+                const modelName = selectedModel === 'enhanced' ? 'Enhanced Model' : 'Simple Model';
+                
+                // Update displays
+                
+            });
+        });
+
+        // Prediction form handling
         document.getElementById('prediction-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const tickers = document.getElementById('tickers').value.trim();
+            const selectedModel = document.querySelector('input[name="model"]:checked').value;
             const predictBtn = document.getElementById('predict-btn');
             const btnText = document.getElementById('btn-text');
             const spinner = document.getElementById('spinner');
@@ -115,7 +149,8 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        tickers: tickers.split(',').map(t => t.trim().toUpperCase())
+                        tickers: tickers.split(',').map(t => t.trim().toUpperCase()),
+                        model_type: selectedModel
                     })
                 });
                 
@@ -159,16 +194,24 @@
                 return;
             }
             
+            // Update model used display
+            if (data.model_used) {
+                modelUsedDisplay.textContent = data.model_used;
+            }
+            
             container.innerHTML = `
                 <div class="results-grid">
                     ${data.predictions.map(prediction => `
                         <div class="stock-card ${prediction.change >= 0 ? 'positive' : 'negative'}">
                             <div class="stock-header">
                                 <h3>${prediction.ticker}</h3>
-                                <span class="change ${prediction.change >= 0 ? 'positive' : 'negative'}">
-                                    <i class="fas fa-${prediction.change >= 0 ? 'caret-up' : 'caret-down'}"></i>
-                                    ${prediction.change >= 0 ? '+' : ''}${prediction.change}%
-                                </span>
+                                <div class="prediction-meta">
+                                    <span class="change ${prediction.change >= 0 ? 'positive' : 'negative'}">
+                                        <i class="fas fa-${prediction.change >= 0 ? 'caret-up' : 'caret-down'}"></i>
+                                        ${prediction.change >= 0 ? '+' : ''}${prediction.change}%
+                                    </span>
+                                    <span class="method-badge">${prediction.method || 'ML'}</span>
+                                </div>
                             </div>
                             <div class="price-info">
                                 <div class="price-current">
@@ -187,11 +230,31 @@
                                 </div>
                                 <span class="confidence-value">${prediction.confidence}%</span>
                             </div>
+                            ${prediction.model_used ? `
+                            <div class="model-info">
+                                <small>Model: ${prediction.model_used}</small>
+                            </div>
+                            ` : ''}
                         </div>
                     `).join('')}
                 </div>
             `;
         }
+
+        // Load model info on page load
+        async function loadModelInfo() {
+            try {
+                const response = await fetch('/model-info');
+                const data = await response.json();
+                
+                console.log('Model info loaded:', data);
+            } catch (error) {
+                console.error('Error loading model info:', error);
+            }
+        }
+
+        // Load model info when page loads
+        window.addEventListener('load', loadModelInfo);
     </script>
 </body>
 </html>
