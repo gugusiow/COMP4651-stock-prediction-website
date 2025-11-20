@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import os
+import random
 
 app = Flask(__name__)
 
@@ -13,16 +14,19 @@ def predict():
         data = request.get_json()
         tickers = data.get('tickers', [])
         
-        # TODO: Replace with your actual ML model prediction logic
-        # For now, returning mock data
+        # Simple mock predictions without ML dependencies
         mock_predictions = []
-        for ticker in tickers[:5]:  # Limit to 5 tickers for demo
+        for ticker in tickers[:5]:  # Limit to 5 tickers
+            base_price = 100 + len(ticker) * 5
+            change_percent = random.uniform(-5, 5)
+            predicted_price = base_price * (1 + change_percent/100)
+            
             mock_predictions.append({
                 'ticker': ticker,
-                'current_price': round(150.25 + len(ticker), 2),
-                'predicted_price': round(152.80 + len(ticker), 2),
-                'change': round(1.7 + (len(ticker) * 0.1), 2),
-                'confidence': round(78.5 + (len(ticker) * 0.5), 1)
+                'current_price': round(base_price, 2),
+                'predicted_price': round(predicted_price, 2),
+                'change': round(change_percent, 2),
+                'confidence': round(random.uniform(60, 95), 1)
             })
         
         return jsonify({'predictions': mock_predictions})
@@ -30,7 +34,6 @@ def predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Health check route for Render
 @app.route('/health')
 def health():
     return jsonify({'status': 'healthy'})
