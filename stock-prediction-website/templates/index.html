@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockPredictor | AI-Powered Stock Forecasts</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <span>StockPredictor</span>
+            </div>
+            <p class="tagline">AI-powered stock price predictions for tomorrow's market</p>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <div class="card">
+                    <h2><i class="fas fa-search"></i> Analyze Stocks</h2>
+                    <p class="card-description">Enter one or more stock tickers (comma-separated) to get AI-powered price predictions for tomorrow</p>
+                    
+                    <form id="prediction-form" class="prediction-form">
+                        <div class="input-group">
+                            <label for="tickers"><i class="fas fa-tag"></i> Stock Tickers</label>
+                            <input 
+                                type="text" 
+                                id="tickers" 
+                                name="tickers" 
+                                placeholder="e.g., AAPL, MSFT, GOOGL" 
+                                required
+                            >
+                            <small>Separate multiple tickers with commas</small>
+                        </div>
+                        
+                        <button type="submit" class="predict-btn" id="predict-btn">
+                            <i class="fas fa-bolt"></i>
+                            <span id="btn-text">Get Predictions</span>
+                            <div class="spinner hidden" id="spinner"></div>
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section hidden" id="results-section">
+                <div class="card">
+                    <h2><i class="fas fa-chart-bar"></i> Prediction Results</h2>
+                    <div class="results-container" id="results-container">
+                        <!-- Results will be populated here by JavaScript -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section class="features-section">
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <i class="fas fa-brain"></i>
+                        <h3>AI-Powered</h3>
+                        <p>Advanced machine learning models analyze historical data and market patterns</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-bolt"></i>
+                        <h3>Real-Time Data</h3>
+                        <p>Latest market data integrated for accurate, up-to-date predictions</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-user-graduate"></i>
+                        <h3>Beginner Friendly</h3>
+                        <p>Simple interface designed for investors of all experience levels</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p><i class="fas fa-info-circle"></i> <strong>Disclaimer:</strong> Predictions are for educational purposes only. Past performance doesn't guarantee future results. Always do your own research.</p>
+            <p class="copyright">&copy; 2024 StockPredictor. Built with ❤️ for investors.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('prediction-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const tickers = document.getElementById('tickers').value.trim();
+            const predictBtn = document.getElementById('predict-btn');
+            const btnText = document.getElementById('btn-text');
+            const spinner = document.getElementById('spinner');
+            const resultsSection = document.getElementById('results-section');
+            const resultsContainer = document.getElementById('results-container');
+            
+            if (!tickers) {
+                alert('Please enter at least one stock ticker');
+                return;
+            }
+            
+            // Show loading state
+            predictBtn.disabled = true;
+            btnText.textContent = 'Analyzing...';
+            spinner.classList.remove('hidden');
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        tickers: tickers.split(',').map(t => t.trim().toUpperCase())
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Display results
+                displayResults(data);
+                resultsSection.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error fetching predictions. Please try again.');
+            } finally {
+                // Reset button
+                predictBtn.disabled = false;
+                btnText.textContent = 'Get Predictions';
+                spinner.classList.add('hidden');
+            }
+        });
+        
+        function displayResults(data) {
+            const container = document.getElementById('results-container');
+            
+            if (data.error) {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>${data.error}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (!data.predictions || data.predictions.length === 0) {
+                container.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>No predictions received. Please check your ticker symbols.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="results-grid">
+                    ${data.predictions.map(prediction => `
+                        <div class="stock-card ${prediction.change >= 0 ? 'positive' : 'negative'}">
+                            <div class="stock-header">
+                                <h3>${prediction.ticker}</h3>
+                                <span class="change ${prediction.change >= 0 ? 'positive' : 'negative'}">
+                                    <i class="fas fa-${prediction.change >= 0 ? 'caret-up' : 'caret-down'}"></i>
+                                    ${prediction.change >= 0 ? '+' : ''}${prediction.change}%
+                                </span>
+                            </div>
+                            <div class="price-info">
+                                <div class="price-current">
+                                    <span class="label">Current:</span>
+                                    <span class="value">$${prediction.current_price}</span>
+                                </div>
+                                <div class="price-predicted">
+                                    <span class="label">Predicted:</span>
+                                    <span class="value">$${prediction.predicted_price}</span>
+                                </div>
+                            </div>
+                            <div class="confidence">
+                                <span class="label">Confidence:</span>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: ${prediction.confidence}%"></div>
+                                </div>
+                                <span class="confidence-value">${prediction.confidence}%</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
