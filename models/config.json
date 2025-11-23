@@ -10,5 +10,5 @@
   "classification_threshold": 0.001,
   "training_samples": 4410,
   "input_dimension": 300,
-  "test_accuracy": 0.5090702947845805
+  "test_accuracy": 0.5260770975056689
 }

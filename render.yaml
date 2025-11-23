@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: stock-price-predictor
+    env: python
+    pythonVersion: 3.10.8
+    buildCommand: |
+      pip install --upgrade pip setuptools wheel
+      pip install -r requirements.txt
+    startCommand: python app.py  # adjust to your app entry file
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: '1'  # ensures real-time logging
