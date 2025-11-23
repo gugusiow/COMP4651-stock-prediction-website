@@ -5,8 +5,20 @@ from ml_pipeline.model_predictor import predictor as simple_predictor
 from ml_pipeline.enhanced_predictor import enhanced_predictor
 
 # Initialize both predictors
-simple_predictor.load_model()
-enhanced_predictor.load_model()
+# simple_predictor.load_model()
+# enhanced_predictor.load_model()
+# Attempt to load models but don't let failures crash the app
+for name, pred in (("simple", simple_predictor), ("enhanced", enhanced_predictor)):
+    try:
+        pred.load_model()
+        logging.info(f"{name} predictor loaded successfully")
+    except Exception as e:
+        logging.exception(f"Failed to load {name} predictor at startup: {e}")
+        # Ensure a consistent attribute so health() can report availability
+        try:
+            pred.model = None
+        except Exception:
+            pass
 
 app = Flask(__name__)
 
@@ -47,6 +59,12 @@ def predict():
         else:
             predictor = enhanced_predictor
             model_name = "Enhanced ML"
+
+        # If the chosen model isn't loaded, return 503 (or implement fallback)
+        if getattr(predictor, 'model', None) is None:
+            msg = f"{model_name} is not available right now"
+            logging.warning(msg)
+            return jsonify({'error': msg, 'model_loaded': False}), 503
         
         # Make predictions
         predictions = []

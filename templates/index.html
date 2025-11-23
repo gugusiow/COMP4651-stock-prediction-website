@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bullish Cloud | AI-Powered Stock Forecasts on the Cloud</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="preload" as="image" href="{{ url_for('static', filename='images/Cloud.png') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -28,16 +29,16 @@
                         <div class="model-options">
                             <label class="model-option">
                                 <input type="radio" name="model" value="enhanced" checked>
-                                <div class="model-card">
+                                <div class="model-card" data-model="enhanced" tabindex="0" role="button" aria-pressed="true">
                                     <i class="fas fa-rocket"></i>
                                     <h3>Enhanced Model</h3>
-                                    <p>Uses technical indicators (RSI, MACD, Bollinger Bands) for more accurate predictions</p>
+                                    <p>Uses technical indicators for more accurate predictions</p>
                                     <div class="model-badge">Recommended</div>
                                 </div>
                             </label>
                             <label class="model-option">
                                 <input type="radio" name="model" value="simple">
-                                <div class="model-card">
+                                <div class="model-card" data-model="simple" tabindex="0" role="button" aria-pressed="false">
                                     <i class="fas fa-bolt"></i>
                                     <h3>Simple Model</h3>
                                     <p>Basic price and volume analysis for quick predictions</p>
@@ -105,20 +106,42 @@
 
     <script>
         // Model selection
+        // Model selection (card-style)
+        const modelCards = document.querySelectorAll('.model-card');
         const modelRadios = document.querySelectorAll('input[name="model"]');
-        const currentModelDisplay = document.getElementById('current-model');
-        const modelIndicator = document.getElementById('model-indicator');
         const modelUsedDisplay = document.getElementById('model-used');
 
-        modelRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                const selectedModel = this.value;
-                const modelName = selectedModel === 'enhanced' ? 'Enhanced Model' : 'Simple Model';
-                
-                // Update displays
-                
+        function updateSelectedModelUI(value) {
+            modelCards.forEach(card => {
+                const cardModel = card.dataset.model;
+                const selected = cardModel === value;
+                card.classList.toggle('selected', selected);
+                card.setAttribute('aria-pressed', selected ? 'true' : 'false');
+                const radio = card.closest('label').querySelector('input[name="model"]');
+                if (radio) radio.checked = selected;
+            });
+            const modelName = value === 'enhanced' ? 'Enhanced Model' : 'Simple Model';
+            if (modelUsedDisplay) modelUsedDisplay.textContent = modelName;
+        }
+
+        // Click / keyboard support for cards
+        modelCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const model = card.dataset.model;
+                updateSelectedModelUI(model);
+            });
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const model = card.dataset.model;
+                    updateSelectedModelUI(model);
+                }
             });
         });
+
+        // Initialize selection from checked radio
+        const checked = document.querySelector('input[name="model"]:checked');
+        if (checked) updateSelectedModelUI(checked.value);
 
         // Prediction form handling
         document.getElementById('prediction-form').addEventListener('submit', async function(e) {
