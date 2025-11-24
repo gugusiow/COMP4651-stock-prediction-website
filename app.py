@@ -4,8 +4,29 @@ import random
 import os
 import json
 import logging
+import time
 
 app = Flask(__name__)
+
+# Cache dictionary to store data and timestamps:
+cache = {}
+CACHE_TTL_SECONDS = 10 * 60  # 10 minutes cache expiry
+
+def get_cached_stock_data(ticker):
+    """Return cached data if fresh, else None."""
+    cached = cache.get(ticker)
+    if cached:
+        data, timestamp = cached
+        if time.time() - timestamp < CACHE_TTL_SECONDS:
+            return data
+        else:
+            # Expired cache
+            cache.pop(ticker, None)
+    return None
+
+def set_cache_stock_data(ticker, data):
+    """Store ticker data with current timestamp."""
+    cache[ticker] = (data, time.time())
 
 @app.route('/')
 def home():
@@ -42,11 +63,19 @@ def predict():
     for ticker in valid_tickers:
         try:
             logging.info(f"Fetching data for ticker: {ticker}")
-            stock = yf.Ticker(ticker)
-            hist = stock.history(period="1d")
-            close_series = hist.get('Close')
-            info = stock.info
+            # Check cache first
+            cached_data = get_cached_stock_data(ticker)
+            if cached_data:
+                hist, info = cached_data
+            else:
+                stock = yf.Ticker(ticker)
+                hist = stock.history(period="1d")
+                # close_series = hist.get('Close')
+                info = stock.info
+                set_cache_stock_data(ticker, (hist, info))
+
             name = info.get('longName', '')
+            close_series = hist.get('Close')
 
             if close_series is None or close_series.empty:
                 logging.warning(f"No price data for ticker {ticker}")
