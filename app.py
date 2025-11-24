@@ -3,6 +3,7 @@ import yfinance as yf
 import random
 import os
 import json
+import logging
 
 app = Flask(__name__)
 
@@ -15,10 +16,14 @@ def predict():
     data = request.get_json(silent=True) or {}
     tickers = data.get('tickers', [])
 
+    logging.info(f"Received tickers: {tickers}")
+
     if not isinstance(tickers, list):
+        logging.error("tickers received is not a list")
         return jsonify({'error': 'tickers must be a list'}), 400
 
     if not tickers:
+        logging.error("No tickers provided")
         return jsonify({'error': 'No tickers provided'}), 400
 
     # Clean and cap tickers to 8 max, uppercase and strip spaces
@@ -29,12 +34,14 @@ def predict():
             valid_tickers.append(cleaned)
 
     if not valid_tickers:
+        logging.error("No valid tickers after cleaning")
         return jsonify({'error': 'No valid tickers'}), 400
 
     results = []
 
     for ticker in valid_tickers:
         try:
+            logging.info(f"Fetching data for ticker: {ticker}")
             stock = yf.Ticker(ticker)
             hist = stock.history(period="1d")
             close_series = hist.get('Close')
@@ -42,6 +49,7 @@ def predict():
             name = info.get('longName', '')
 
             if close_series is None or close_series.empty:
+                logging.warning(f"No price data for ticker {ticker}")
                 results.append({
                     'ticker': ticker,
                     'company_name': name,
@@ -52,7 +60,7 @@ def predict():
             last_price = float(close_series.iloc[-1])
 
             # Mock prediction: random +/- up to 5% of last price
-            mock_pred = last_price * (1 + random.uniform(-0.03, 0.03))
+            mock_pred = last_price * (1 + random.uniform(-0.03, 0.02))
             confidence = round(random.uniform(60, 99), 2)  # e.g., 70% to 99%
             change = (mock_pred - last_price)/last_price * 100
             model = data.get('model', 'ML')
@@ -70,7 +78,10 @@ def predict():
                 'method': model
             })
 
+            logging.info(f"Processed ticker {ticker}: current_price={last_price}, predicted_price={mock_pred}")
+
         except Exception as e:
+            logging.error(f"Error processing ticker {ticker}: {str(e)}")
             results.append({
                 'ticker': ticker,
                 'company_name': '',
