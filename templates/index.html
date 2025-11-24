@@ -225,7 +225,7 @@
                     ${data.predictions.map(prediction => `
                         <div class="stock-card ${prediction.change >= 0 ? 'positive' : 'negative'}">
                             <div class="stock-header">
-                                <h3>${prediction.ticker}</h3>
+                                <h3>${prediction.ticker} - ${prediction.company_name}</h3>
                                 <div class="prediction-meta">
                                     <span class="change ${prediction.change >= 0 ? 'positive' : 'negative'}">
                                         <i class="fas fa-${prediction.change >= 0 ? 'caret-up' : 'caret-down'}"></i>

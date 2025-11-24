@@ -38,10 +38,13 @@ def predict():
             stock = yf.Ticker(ticker)
             hist = stock.history(period="1d")
             close_series = hist.get('Close')
+            info = stock.info
+            name = info.get('longName', '')
 
             if close_series is None or close_series.empty:
                 results.append({
                     'ticker': ticker,
+                    'company_name': name,
                     'error': f'No price data for ticker {ticker}'
                 })
                 continue
@@ -60,6 +63,7 @@ def predict():
             results.append({
                 'change': round(change, 2),
                 'ticker': ticker,
+                'company_name': name,
                 'current_price': round(last_price, 2),
                 'predicted_price': round(mock_pred, 2),
                 'confidence': confidence,
@@ -69,6 +73,7 @@ def predict():
         except Exception as e:
             results.append({
                 'ticker': ticker,
+                'company_name': '',
                 'error': str(e)
             })
 
