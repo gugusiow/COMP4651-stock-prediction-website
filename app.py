@@ -1,29 +1,10 @@
 from flask import Flask, render_template, request, jsonify
+import yfinance as yf
+import random
 import os
-import logging
-from ml_pipeline.model_predictor import predictor as simple_predictor
-from ml_pipeline.enhanced_predictor import enhanced_predictor
-
-# Initialize both predictors
-# simple_predictor.load_model()
-# enhanced_predictor.load_model()
-# Attempt to load models but don't let failures crash the app
-for name, pred in (("simple", simple_predictor), ("enhanced", enhanced_predictor)):
-    try:
-        pred.load_model()
-        logging.info(f"{name} predictor loaded successfully")
-    except Exception as e:
-        logging.exception(f"Failed to load {name} predictor at startup: {e}")
-        # Ensure a consistent attribute so health() can report availability
-        try:
-            pred.model = None
-        except Exception:
-            pass
+import json
 
 app = Flask(__name__)
-
-# Store the current model selection
-current_model = "enhanced"  # default to enhanced
 
 @app.route('/')
 def home():
@@ -31,119 +12,72 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    try:
-        data = request.get_json()
-        tickers = data.get('tickers', [])
-        model_type = data.get('model_type', 'enhanced')  # Get model type from request
-        
-        global current_model
-        current_model = model_type  # Update current model selection
-        
-        if not tickers:
-            return jsonify({'error': 'No tickers provided'}), 400
-        
-        # Clean tickers
-        valid_tickers = []
-        for ticker in tickers[:8]:  # Limit to 8 tickers
-            cleaned = str(ticker).strip().upper()
-            if cleaned and len(cleaned) <= 6:
-                valid_tickers.append(cleaned)
-        
-        if not valid_tickers:
-            return jsonify({'error': 'No valid tickers'}), 400
-        
-        # Select the appropriate predictor
-        if model_type == 'simple':
-            predictor = simple_predictor
-            model_name = "Simple ML"
-        else:
-            predictor = enhanced_predictor
-            model_name = "Enhanced ML"
+    data = request.get_json(silent=True) or {}
+    tickers = data.get('tickers', [])
 
-        # If the chosen model isn't loaded, return 503 (or implement fallback)
-        if getattr(predictor, 'model', None) is None:
-            msg = f"{model_name} is not available right now"
-            logging.warning(msg)
-            return jsonify({'error': msg, 'model_loaded': False}), 503
-        
-        # Make predictions
-        predictions = []
-        for ticker in valid_tickers:
-            try:
-                prediction = predictor.predict(ticker)
-                prediction['model_used'] = model_name
-                predictions.append(prediction)
-            except Exception as e:
-                logging.error(f"Error predicting {ticker} with {model_name}: {e}")
-                predictions.append({
+    if not isinstance(tickers, list):
+        return jsonify({'error': 'tickers must be a list'}), 400
+
+    if not tickers:
+        return jsonify({'error': 'No tickers provided'}), 400
+
+    # Clean and cap tickers to 8 max, uppercase and strip spaces
+    valid_tickers = []
+    for raw in tickers[:8]:
+        cleaned = str(raw).strip().upper()
+        if cleaned and len(cleaned) <= 6:
+            valid_tickers.append(cleaned)
+
+    if not valid_tickers:
+        return jsonify({'error': 'No valid tickers'}), 400
+
+    results = []
+
+    for ticker in valid_tickers:
+        try:
+            stock = yf.Ticker(ticker)
+            hist = stock.history(period="1d")
+            close_series = hist.get('Close')
+
+            if close_series is None or close_series.empty:
+                results.append({
                     'ticker': ticker,
-                    'error': 'Prediction failed',
-                    'current_price': 0,
-                    'predicted_price': 0,
-                    'change': 0,
-                    'confidence': 0,
-                    'method': 'Error',
-                    'model_used': model_name
+                    'error': f'No price data for ticker {ticker}'
                 })
-        
-        return jsonify({
-            'predictions': predictions,
-            'model_used': model_name
-        })
-    
-    except Exception as e:
-        logging.error(f"Prediction endpoint error: {e}")
-        return jsonify({'error': 'Service temporarily unavailable'}), 500
+                continue
+
+            last_price = float(close_series.iloc[-1])
+
+            # Mock prediction: random +/- up to 5% of last price
+            mock_pred = last_price * (1 + random.uniform(-0.03, 0.03))
+            confidence = round(random.uniform(60, 99), 2)  # e.g., 70% to 99%
+            change = (mock_pred - last_price)/last_price * 100
+            model = data.get('model', 'ML')
+            if (model == "simple"):
+                model = "Simple Model"
+            else: 
+                model = "Enhanced Model" 
+            results.append({
+                'change': round(change, 2),
+                'ticker': ticker,
+                'current_price': round(last_price, 2),
+                'predicted_price': round(mock_pred, 2),
+                'confidence': confidence,
+                'method': model
+            })
+
+        except Exception as e:
+            results.append({
+                'ticker': ticker,
+                'error': str(e)
+            })
+
+    # Return all results as JSON
+    return jsonify({'predictions': results}), 200
 
 @app.route('/health')
 def health():
-    return jsonify({
-        'status': 'healthy', 
-        'simple_model_loaded': simple_predictor.model is not None,
-        'enhanced_model_loaded': enhanced_predictor.model is not None,
-        'current_model': current_model
-    })
-
-@app.route('/switch-model', methods=['POST'])
-def switch_model():
-    """Endpoint to switch models"""
-    try:
-        data = request.get_json()
-        model_type = data.get('model_type', 'enhanced')
-        
-        global current_model
-        current_model = model_type
-        
-        return jsonify({
-            'status': 'success', 
-            'current_model': current_model,
-            'message': f'Switched to {model_type} model'
-        })
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/model-info')
-def model_info():
-    """Get information about available models"""
-    simple_info = {
-        'loaded': simple_predictor.model is not None,
-        'type': 'Simple ML',
-        'features': 'OHLCV + Basic Sequences',
-        'sequence_length': getattr(simple_predictor, 'sequence_length', 60)
-    }
-    
-    enhanced_info = {
-        'loaded': enhanced_predictor.model is not None,
-        'type': 'Enhanced ML', 
-        'features': 'Technical Indicators + Advanced Features',
-        'sequence_length': getattr(enhanced_predictor, 'sequence_length', 20)
-    }
-    
-    return jsonify({
-        'simple_model': simple_info,
-        'enhanced_model': enhanced_info,
-        'current_model': current_model
-    })
+    return jsonify({'status': 'healthy'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

@@ -168,16 +168,14 @@
             try {
                 const response = await fetch('/predict', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         tickers: tickers.split(',').map(t => t.trim().toUpperCase()),
-                        model_type: selectedModel
+                        model: selectedModel
                     })
                 });
-                
                 const data = await response.json();
+                console.log(data);
                 
                 // Display results
                 displayResults(data);
