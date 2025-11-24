@@ -75,8 +75,7 @@ def predict():
 
             logging.info(f"{ticker} - last refreshed: {last_refreshed}, closing price: {last_close}")
 
-            # Mock prediction: ±3%
-            mock_pred = last_price * (1 + random.uniform(-0.03, 0.03))
+            mock_pred = last_price * (1 + random.uniform(-0.03, 0.02))
             confidence = round(random.uniform(60, 99), 2)
             change = (mock_pred - last_price) / last_price * 100
 
