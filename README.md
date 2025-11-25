@@ -10,8 +10,10 @@ Details:
 - app_debug.py is just a simple web app we used to debug whether we were getting the right financial info/models loaded.
 - app_Vertex.py is a skeleton for deploying a web app that calls the models that have been deployed onto Vertex AI and are exposed via API endpoints. 
 - app_yfinance.py was originally the demo we wanted to use, but when deploying onto Render (platform for web service hosting) Yahoo Finance were rate limiting us from scraping their data.
-- app.py is the demo app we used during presentation as a proof-of-concept for ML training pipeline on the cloud. We switched from Yahoo Finance to Alpha Vantage to provide us with the financial data. To host and run on Render, please set an ENVIRONMENT VARIABLE: ALPHA_VANTAGE_API_KEY as your own free API access key from https://www.alphavantage.co/. The free API only allows certain "free" APIs and the one we used was TIME_SERIES_DAILY.
+- app.py is the demo app we used during presentation as a proof-of-concept for ML training pipeline on the cloud. We switched from Yahoo Finance to Alpha Vantage to provide us with the financial data. 
 
+* To host and run on Render (https://dashboard.render.com/), please REMEMBER set an ENVIRONMENT VARIABLE: ALPHA_VANTAGE_API_KEY as your own free API access key from https://www.alphavantage.co/. The free API only allows certain "free" APIs and the one we used was TIME_SERIES_DAILY.
+* To run locally, use the command: "python app.py"
 * To use the trained models, switch to main branch and use the app.py there
 1. Simple Model: 
   - MLPClassifier trained on basic features such as 'Open', 'High', 'Low', 'Close', 'Volume'.
