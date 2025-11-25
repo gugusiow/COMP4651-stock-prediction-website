@@ -7,7 +7,9 @@ How to use:
 3. View the predicted stock price output.
 
 Details:
-* This only runs locally as models are stored on device and loaded from disk storage.
+* To view the app.py we used for web hosting on the cloud, switch to demoBranch. 
+* This version of app.py is able to access models locally as they are stored on device and loaded from disk storage.
+* Run the command: "python app.py" to run locally
 1. Simple Model: 
   - MLPClassifier trained on basic features such as 'Open', 'High', 'Low', 'Close', 'Volume'.
   - Trained on several big name stocks such as AAPL and AMZN due to their market dominance and overall representation.
@@ -18,4 +20,3 @@ Details:
     have a better understanding of the financial markets.
   - Trained on more big name stocks like MSFT and GOOGL, and even ETFs like QQQ and SPY which provide a more holistic view of the
     whole financial market.
-  
