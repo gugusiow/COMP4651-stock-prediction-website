@@ -7,6 +7,7 @@ How to use:
 3. View the predicted stock price output.
 
 Details:
+* This only runs locally as models are stored on device and loaded from disk storage.
 1. Simple Model: 
   - MLPClassifier trained on basic features such as 'Open', 'High', 'Low', 'Close', 'Volume'.
   - Trained on several big name stocks such as AAPL and AMZN due to their market dominance and overall representation.
