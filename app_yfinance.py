@@ -1,4 +1,4 @@
-    from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify
 import yfinance as yf
 import random
 import os
